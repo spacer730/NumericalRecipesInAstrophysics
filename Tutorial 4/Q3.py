@@ -39,8 +39,8 @@ print("Pearson Correlation Coefficient for numpy.random.uniform(0,"+str(m)+",100
 fig, axs = plt.subplots(1, 2, sharey=False, tight_layout=True)
 
 # We can set the number of bins with the `bins` kwarg
-axs[0].plot(n, np1, color=(1,0,0))
-axs[1].plot(numpyn, numpynp1, color=(0,1,0))
+axs[0].scatter(n, np1, marker="o", color=(1,0,0))
+axs[1].scatter(numpyn, numpynp1, marker="o", color=(0,1,0))
 
 axs[0].text(5,32,'PCC: '+str(coefICG))
 axs[1].text(0,255,'PCC: '+str(coefNUMPY))
