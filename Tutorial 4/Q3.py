@@ -56,5 +56,5 @@ for ax in axs:
 #axs[0].set_xlim([-1,5])
 #axs[0].set_ylim([0,6])
 
-#plt.show()
-plt.savefig('Q3-x0=2-a='+str(a)+'-c='+str(c)+'-m='+str(m))
+plt.show()
+#plt.savefig('Q3-x0=2-a='+str(a)+'-c='+str(c)+'-m='+str(m))
