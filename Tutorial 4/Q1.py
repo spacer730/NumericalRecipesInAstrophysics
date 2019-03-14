@@ -26,7 +26,7 @@ def riddler(x,h,d,m):
 			D[0].append(centraldifference(x,h/(d**(i+1))))
 
 	for j in range(m-1):
-		riddlercombine(D,j,d,m)		
+		riddlercombine(D,j,d,m)
 	return D[-1][-1]
 
 def riddlercombine(D,j,d,m):
@@ -34,7 +34,7 @@ def riddlercombine(D,j,d,m):
 		D[j+1].append((d**(2*(j+1))*D[j][i+1]-D[j][i])/(d**(2*(j+1))-1))
 
 
-riddler=riddler(valuerange,0.1,2,5)
-plt.plot(valuerange,riddler)
+riddlerresults=riddler(valuerange,0.1,2,5)
+plt.plot(valuerange,riddlerresults)
 plt.legend()
 plt.show()

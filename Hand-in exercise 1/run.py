@@ -97,6 +97,23 @@ def Nevillesinterpolation(interpolationrange,numbers,values):
 
    return interpolatedvalues
 
+def centraldifference(func,x,h):
+	return (func(x+h)-func(x-h))/(2*h)
+
+def riddler(func,x,h,d,m):
+	D=[[] for i in range(m)]
+	D[0].append(centraldifference(func,x,h))
+	if m>1:
+		for i in range(m-1):
+			D[0].append(centraldifference(func,x,h/(d**(i+1))))
+
+	for j in range(m-1):
+		riddlercombine(D,j,d,m)		
+	return D[-1][-1]
+
+def riddlercombine(D,j,d,m):
+	for i in range(m-j-1):
+		D[j+1].append((d**(2*(j+1))*D[j][i+1]-D[j][i])/(d**(2*(j+1))-1))
 
 if __name__ == '__main__':
    seed = 2
@@ -149,3 +166,5 @@ if __name__ == '__main__':
    axs2.set(xlabel='log(x)', ylabel='Density profile')
 
    fig2.savefig('Log-Log plot')
+
+   derivative_at_b = riddler(densityprofile,b,0.1,2,6)
