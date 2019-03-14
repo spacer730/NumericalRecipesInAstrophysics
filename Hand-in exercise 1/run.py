@@ -108,12 +108,15 @@ def riddler(func,x,h,d,m):
 			D[0].append(centraldifference(func,x,h/(d**(i+1))))
 
 	for j in range(m-1):
-		riddlercombine(D,j,d,m)		
+		riddlercombine(D,j,d,m)
 	return D[-1][-1]
 
 def riddlercombine(D,j,d,m):
 	for i in range(m-j-1):
 		D[j+1].append((d**(2*(j+1))*D[j][i+1]-D[j][i])/(d**(2*(j+1))-1))
+
+def analyticaldrvdensityprofile(x):
+   return densityprofile(x)*((1/x)*(a-3-c*(x/b)**c))
 
 if __name__ == '__main__':
    seed = 2
@@ -168,3 +171,7 @@ if __name__ == '__main__':
    fig2.savefig('Log-Log plot')
 
    derivative_at_b = riddler(densityprofile,b,0.1,2,6)
+   analyticaldrv_at_b = analyticaldrvdensityprofile(b)
+   
+   print("The analytical derivative at b is: " + str(analyticaldrv_at_b))
+   print("The numerically solved derivative at b is: " + str(derivative_at_b))
