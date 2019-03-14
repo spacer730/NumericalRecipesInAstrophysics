@@ -41,8 +41,62 @@ def RNG(length, norm = True):
       randomnumbers = np.array(randomnumbers)/(2**64)
 
    seed = state
-      
-   return randomnumbers.tolist()
+   if length == 1:
+      return randomnumbers[0]
+   else:
+      return randomnumbers.tolist()
+
+def densityprofileint(x):
+   global a,b,c
+   return ((x/b)**(a-3))*np.exp(-(x/b)**c)*x**2
+
+def densityprofile(x):
+   global a,b,c
+   return ((x/b)**(a-3))*np.exp(-(x/b)**c)
+
+def extmidpoint(func, edges, n):
+   h = (edges[1]-edges[0])/n
+   integration = 0
+
+   for i in range(n):
+       integration += func(edges[0]+(i+0.5)*h)
+   integration = h*integration
+
+   return integration
+
+def extmidpointromberg(func, edges, n, N):
+   s = [[] for i in range(N)]
+   s[0].append(extmidpoint(func, edges, n))
+
+   for i in range (1,N):
+      n = 2*n
+      s[0].append(extmidpoint(func, edges, n))
+   
+   for j in range(N-1):
+      for i in range(N-(j+1)):
+         s[j+1].append(s[j][i+1]+(s[j][i+1]-s[j][i])/(-1+4**(j+1)))
+
+   return s[-1][0]
+
+def nevi(x,i,j,numbers,p):
+   return ((x-numbers[j])*p[i][j+1]-(x-numbers[j+1+i])*p[i][j])/(numbers[j+1+i]-numbers[j])
+
+def Nevillesinterpolation(interpolationrange,numbers,values):
+   interpolatedvalues = []
+
+   for interpolatednumber in interpolatedrange:
+      M=len(numbers)
+      p=[[] for i in range(7)]
+      p[0]=values
+      while M>1:
+         for j in range(M-1):
+            order = 1+len(numbers)-M
+            p[order].append(nevi(interpolatednumber,order-1,j,numbers,p))
+         M-=1
+      interpolatedvalues.append(p[len(numbers)-1][0])
+
+   return interpolatedvalues
+
 
 if __name__ == '__main__':
    seed = 2
@@ -72,11 +126,26 @@ if __name__ == '__main__':
       ax.set(xlabel=xlabel[i], ylabel=ylabel[i])
       i+=1
 
-   plt.savefig('RNG-test-results')
+   fig.savefig('RNG-test-results')
+
+   a = (RNG(1)*1.4)+1.1
+   b = (RNG(1)*1.5)+0.5
+   c = (RNG(1)*2.5)+1.5
    
-   uniform = RNG(3)
-   a = (uniform[0]*1.4)+1.1
-   b = (uniform[1]*1.5)+0.5
-   c = (uniform[2]*2.5)+1.5
+   integration = extmidpointromberg(densityprofileint, [0,5], 10**2, 4)
+   A = (1/(4*np.pi))*(1/integration)
    
+   print("a,b,c,A = " + str(a) + "," + str(b) + "," + str(c) + "," + str(A))
+
+   numbers = [10**-4, 10**-2, 10**-1, 1, 5]
+   densityvalues = [densityprofile(10**-4), densityprofile(10**-2), densityprofile(10**-1), densityprofile(1), densityprofile(5)]
+
+   interpolatedrange = np.logspace(-4,0.69897,100)
+   Nevillesvalues = Nevillesinterpolation(interpolatedrange,numbers,densityvalues)
    
+   fig2, axs2 = plt.subplots()
+
+   axs2.loglog(interpolatedrange, Nevillesvalues)
+   axs2.set(xlabel='log(x)', ylabel='Density profile')
+
+   fig2.savefig('Log-Log plot')
