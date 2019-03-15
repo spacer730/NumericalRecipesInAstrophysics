@@ -31,7 +31,6 @@ accepted_Hernquist_y = y[accepted_Hernquist]
 
 fig, axs = plt.subplots(1, 2, sharey=False, tight_layout=True)
 
-
 axs[0].plot(points, NFWvalues, label='NFW Profile', c=(1,0,0))
 axs[0].scatter(accepted_NFW_x, accepted_NFW_y, s=0.1, label='NFW RNG', c=[(0,0,1)])
 axs[1].plot(points, Hernquistvalues, label='Hernquist Profile', color=(0,1,0))

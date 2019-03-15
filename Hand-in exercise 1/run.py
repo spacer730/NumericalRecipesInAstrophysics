@@ -47,12 +47,13 @@ def RNG(length, norm = True):
       return randomnumbers.tolist()
 
 def densityprofileint(x):
-   global a,b,c
    return ((x/b)**(a-3))*np.exp(-(x/b)**c)*x**2
 
 def densityprofile(x):
-   global a,b,c
    return ((x/b)**(a-3))*np.exp(-(x/b)**c)
+
+def ndprofile(x):
+   return 4*np.pi*A*densityprofileint(x)
 
 def extmidpoint(func, edges, n):
    h = (edges[1]-edges[0])/n
@@ -175,3 +176,24 @@ if __name__ == '__main__':
    
    print("The analytical derivative at b is: " + str(analyticaldrv_at_b))
    print("The numerically solved derivative at b is: " + str(derivative_at_b))
+
+   p_u1 = np.array(RNG(100))
+   p_u2 = np.array(RNG(100))
+
+   theta = np.arccos(1-2*p_u1)
+   phi = 2*np.pi*p_u2
+
+   x = np.array(RNG(1000))*5
+   x = x[np.argsort(x)] #Replace with own argsort function
+   y = np.array(RNG(1000))*1.33 #this value depends on a,b,c,A. So make it more general
+   
+   accepted_densityprofile = (y<=ndprofile(x))
+   
+   x_accepted_densityprofile = x[accepted_densityprofile]
+
+   fig3, axs3 = plt.subplots()
+
+   axs3.hist(x_accepted_densityprofile,bins=20)
+   #axs3.plot(x, ndprofile(x))
+
+   fig3.savefig('Density profile')
