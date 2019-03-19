@@ -119,6 +119,26 @@ def riddlercombine(D,j,d,m):
 def analyticaldrvdensityprofile(x):
    return densityprofile(x)*((1/x)*(a-3-c*(x/b)**c))
 
+"""
+def pivotsort(x):
+   pivot = x[-1]
+   insert(floor(len(x)/2),pivot)
+   put pivot in middle
+   crossed = False
+   i = 0
+   j = len(x)-1
+   while crossed == False:
+      increase i untill find
+      decrease j untill find
+      swap if i<j
+      else crossed = True
+   return x_smaller, x_larger
+
+def Quicksort(x):
+   pivot = len(x)-1
+   return x
+"""
+
 if __name__ == '__main__':
    seed = 2
    print("The seed is: " + str(seed))
@@ -197,3 +217,17 @@ if __name__ == '__main__':
    #axs3.plot(x, ndprofile(x))
 
    fig3.savefig('Density profile')
+   
+   super_x = [[] for i in range(1000)]
+
+   #1000 haloes with 100 satellites each.
+   for i in range(1000):
+      x_local = np.array(RNG(1000))*5
+      y_local = np.array(RNG(1000))*1.33
+
+      accepted_densityprofile_local = (y_local<=ndprofile(x_local))
+      x_local_accepted_densityprofile = x[accepted_densityprofile_local]
+      
+      super_x[i] = x_local_accepted_densityprofile
+
+
