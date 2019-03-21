@@ -52,8 +52,8 @@ def densityprofileint(x):
 def densityprofile(x):
    return ((x/b)**(a-3))*np.exp(-(x/b)**c)
 
-def ndprofile(x):
-   return 4*np.pi*A*densityprofileint(x)
+def ndprofile(x, N_sat=1):
+   return N_sat*4*np.pi*A*densityprofileint(x)
 
 def extmidpoint(func, edges, n):
    h = (edges[1]-edges[0])/n
@@ -78,6 +78,35 @@ def extmidpointromberg(func, edges, n, N):
          s[j+1].append(s[j][i+1]+(s[j][i+1]-s[j][i])/(-1+4**(j+1)))
 
    return s[-1][0]
+
+def Linearinterpolation(interpolatedrange,numbers,values):
+   interpolatedvalues = []
+   linslope = []
+
+   for i in range(len(numbers)-1):
+      linslope.append((values[i+1]-values[i])/(numbers[i+1]-numbers[i]))
+
+   def linearinterpolation(x,i):
+      if i<6:
+         return (linslope[i]*(x-numbers[i])+values[i])
+      else:
+         return (linslope[5]*(x-numbers[5])+values[5])
+
+   for interpolatednumber in interpolatedrange:
+      rangefound = False
+      indexrange = 0
+      while rangefound!=True:
+         if interpolatednumber >= numbers[-1]:
+            indexrange = len(numbers)-2
+            rangefound = True
+            interpolatedvalues.append(linearinterpolation(interpolatednumber,indexrange))
+         elif numbers[indexrange] <= interpolatednumber < numbers[indexrange+1]:
+            rangefound = True
+            interpolatedvalues.append(linearinterpolation(interpolatednumber,indexrange))
+         else:
+            indexrange+=1
+
+   return interpolatedvalues
 
 def nevi(x,i,j,numbers,p):
    return ((x-numbers[j])*p[i][j+1]-(x-numbers[j+1+i])*p[i][j])/(numbers[j+1+i]-numbers[j])
@@ -118,6 +147,7 @@ def riddlercombine(D,j,d,m):
 def analyticaldrvdensityprofile(x):
    return densityprofile(x)*((1/x)*(a-3-c*(x/b)**c))
 
+"""
 def ceil(x):
    if x%1 == 0:
       return int(x)
@@ -126,9 +156,13 @@ def ceil(x):
 
 def floor(x):
    return int(x)
+"""
 
 def argsort(x):
-   xd = x[:] #Create a copy of the array so the actual array doesn't get sorted
+   if type(x) is np.ndarray:
+      xd = x[:].tolist() #Create a copy of the array so the actual array doesn't get sorted
+   else:
+      xd = x[:]
    y = [i for i in range(len(x))]
    argsortinner(xd,y)
    return y
@@ -212,16 +246,15 @@ if __name__ == '__main__':
 
    numbers = [10**-4, 10**-2, 10**-1, 1, 5]
    densityvalues = [densityprofile(10**-4), densityprofile(10**-2), densityprofile(10**-1), densityprofile(1), densityprofile(5)]
-
    interpolatedrange = np.logspace(-4,0.69897,100)
-   Nevillesvalues = Nevillesinterpolation(interpolatedrange,numbers,densityvalues)
+
+   linearvalues = Linearinterpolation(interpolatedrange,numbers,densityvalues)
+   #Nevillesvalues = Nevillesinterpolation(interpolatedrange,numbers,densityvalues)
    
    fig2, axs2 = plt.subplots()
-
-   axs2.loglog(interpolatedrange, Nevillesvalues)
+   axs2.loglog(interpolatedrange, linearvalues)
    axs2.set(xlabel='log(x)', ylabel='Density profile')
-
-   fig2.savefig('Log-Log plot')
+   fig2.savefig('Log-Log plot Linear interpolation')
 
    derivative_at_b = riddler(densityprofile,b,0.1,2,6)
    analyticaldrv_at_b = analyticaldrvdensityprofile(b)
@@ -235,33 +268,79 @@ if __name__ == '__main__':
    theta = np.arccos(1-2*p_u1)
    phi = 2*np.pi*p_u2
 
-   x = np.array(RNG(1000))*5
-   #x = x[argsort(x)] #Replace with own argsort function
-   y = np.array(RNG(1000))*1.33 #this value depends on a,b,c,A. So make it more general
-   
-   accepted_densityprofile = (y<=ndprofile(x))
-   
-   x_accepted_densityprofile = x[accepted_densityprofile]
+   x_accepted_densityprofile = []
+   while len(x_accepted_densityprofile)<10000:
+      x = RNG(1)*5
+      y = RNG(1)*1.33
+      if y <= ndprofile(x):
+         x_accepted_densityprofile.append(x)
+
+   logbins = np.logspace(np.log10(10**-4),np.log10(5),20)
 
    fig3, axs3 = plt.subplots()
-
-   axs3.hist(x_accepted_densityprofile,bins=20)
-   #axs3.plot(x, ndprofile(x))
-
+   axs3.hist(x_accepted_densityprofile,bins=logbins,density=True, log=True)
+   Quicksort(x_accepted_densityprofile)
+   axs3.plot(x_accepted_densityprofile, ndprofile(np.array(x_accepted_densityprofile)))
+   axs3.set_xscale('log')
    fig3.savefig('Density profile')
    
-   super_x = [[] for i in range(1000)]
-
+   haloes = [[] for i in range(1000)]
+   
    #1000 haloes with 100 satellites each.
    for i in range(1000):
-      x_local = np.array(RNG(1000))*5
-      x_local = x_local[argsort(x_local)]
-      y_local = np.array(RNG(1000))*1.33
-
-      accepted_densityprofile_local = (y_local<=ndprofile(x_local))
-      x_local_accepted_densityprofile = x_local[accepted_densityprofile_local]
+      x_local_accepted_densityprofile = []
+      while len(x_local_accepted_densityprofile)<100:
+         x = RNG(1)*5
+         y = RNG(1)*1.33
+         if y <= ndprofile(x):
+            x_local_accepted_densityprofile.append(x)
       
-      super_x[i] = x_local_accepted_densityprofile
+      haloes[i] = x_local_accepted_densityprofile
+   
+   """
+   To make histogram of the average of super_x, just concatenate all the data to one array of super_x and make a histogram and divide the histogram counts by 1000. This gives
+   the average in each bin. The problem now is we want 100 values, however each x has different lengths.
+   """
 
-   h = np.array([5,3,4,9,1])
-   h = h[argsort(h)]
+   flattened_haloes = [item for sublist in haloes for item in sublist]
+   Quicksort(flattened_haloes)
+   
+   fig4, axs4 = plt.subplots()
+
+   logbins = np.logspace(np.log10(10**-4),np.log10(5),20)
+
+   axs4.hist(flattened_haloes,bins=logbins,weights=[1/(1000*(logbins[1]-logbins[0])) for i in range(len(flattened_haloes))], log=True)
+   axs4.plot(flattened_haloes, ndprofile(np.array(flattened_haloes),N_sat=100))
+   axs4.set_xscale('log')
+   fig4.savefig('Density profile Haloes')
+
+   """
+   fig4, axs4 = plt.subplots()
+
+   logbins = np.logspace(np.log10(10**-4),np.log10(5),20)
+
+   hist, bins = np.histogram(flattened_haloes,bins=logbins)
+   center = (bins[:-1]+bins[1:])/2
+   width = 1*(bins[1]-bins[0])
+   hist = hist/(1000*width)
+
+   axs4.bar(center, hist, align = 'center', width = width)
+   axs4.plot(flattened_haloes, ndprofile(np.array(flattened_haloes),N_sat=100))
+   axs4.set_xscale('log')
+   fig4.savefig('Density profile Haloes')
+   """
+   
+
+"""
+# Create the histogram and normalize the counts to 1
+hist, bins = np.histogram(x, bins = 50)
+max_val = max(hist)
+hist = [ float(n)/max_val for n in hist]
+
+# Plot the resulting histogram
+center = (bins[:-1]+bins[1:])/2
+width = 0.7*(bins[1]-bins[0])
+plt.bar(center, hist, align = 'center', width = width)
+plt.show()
+"""
+
