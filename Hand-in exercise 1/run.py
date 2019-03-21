@@ -99,45 +99,77 @@ def Nevillesinterpolation(interpolationrange,numbers,values):
    return interpolatedvalues
 
 def centraldifference(func,x,h):
-	return (func(x+h)-func(x-h))/(2*h)
+   return (func(x+h)-func(x-h))/(2*h)
 
 def riddler(func,x,h,d,m):
-	D=[[] for i in range(m)]
-	D[0].append(centraldifference(func,x,h))
-	if m>1:
-		for i in range(m-1):
-			D[0].append(centraldifference(func,x,h/(d**(i+1))))
-
-	for j in range(m-1):
-		riddlercombine(D,j,d,m)
-	return D[-1][-1]
+   D=[[] for i in range(m)]
+   D[0].append(centraldifference(func,x,h))
+   if m>1:
+      for i in range(m-1):
+         D[0].append(centraldifference(func,x,h/(d**(i+1))))
+   for j in range(m-1):
+      riddlercombine(D,j,d,m)
+   return D[-1][-1]
 
 def riddlercombine(D,j,d,m):
-	for i in range(m-j-1):
-		D[j+1].append((d**(2*(j+1))*D[j][i+1]-D[j][i])/(d**(2*(j+1))-1))
+   for i in range(m-j-1):
+      D[j+1].append((d**(2*(j+1))*D[j][i+1]-D[j][i])/(d**(2*(j+1))-1))
 
 def analyticaldrvdensityprofile(x):
    return densityprofile(x)*((1/x)*(a-3-c*(x/b)**c))
 
-"""
-def pivotsort(x):
-   pivot = x[-1]
-   insert(floor(len(x)/2),pivot)
-   put pivot in middle
-   crossed = False
-   i = 0
-   j = len(x)-1
-   while crossed == False:
-      increase i untill find
-      decrease j untill find
-      swap if i<j
-      else crossed = True
-   return x_smaller, x_larger
+def ceil(x):
+   if x%1 == 0:
+      return int(x)
+   else:
+      return int(x)+1
 
-def Quicksort(x):
-   pivot = len(x)-1
-   return x
-"""
+def floor(x):
+   return int(x)
+
+def argsort(x):
+   xd = x[:] #Create a copy of the array so the actual array doesn't get sorted
+   y = [i for i in range(len(x))]
+   argsortinner(xd,y)
+   return y
+
+def argsortinner(xd, y, start=0, end=None): #When sorting the array, also keeps track of how the indices swap around
+   if end == None:
+      end = len(xd)-1
+   if start < end:
+      index = argpivotsort(xd,y,start,end)
+      argsortinner(xd,y,start,index-1)
+      argsortinner(xd,y,index+1,end)
+
+def argpivotsort(xd,y,start,end):
+   pivot = xd[end]
+   i = start-1
+   for j in range(start,end):
+      if xd[j] <= pivot:
+         i += 1
+         xd[i], xd[j] = xd[j], xd[i]
+         y[i], y[j] = y[j], y[i]
+   xd[i+1], xd[end] = xd[end], xd[i+1]
+   y[i+1], y[end] = y[end], y[i+1]
+   return i+1
+
+def pivotsort(x,start,end):
+   pivot = x[end]
+   i = start-1
+   for j in range(start,end):
+      if x[j] <= pivot:
+         i += 1
+         x[i], x[j] = x[j], x[i]
+   x[i+1], x[end] = x[end], x[i+1]
+   return i+1
+
+def Quicksort(x, start=0, end=None):
+   if end == None:
+      end = len(x)-1
+   if start < end:
+      index = pivotsort(x,start,end)
+      Quicksort(x,start,index-1)
+      Quicksort(x,index+1,end)
 
 if __name__ == '__main__':
    seed = 2
@@ -204,7 +236,7 @@ if __name__ == '__main__':
    phi = 2*np.pi*p_u2
 
    x = np.array(RNG(1000))*5
-   x = x[np.argsort(x)] #Replace with own argsort function
+   #x = x[argsort(x)] #Replace with own argsort function
    y = np.array(RNG(1000))*1.33 #this value depends on a,b,c,A. So make it more general
    
    accepted_densityprofile = (y<=ndprofile(x))
@@ -223,11 +255,13 @@ if __name__ == '__main__':
    #1000 haloes with 100 satellites each.
    for i in range(1000):
       x_local = np.array(RNG(1000))*5
+      x_local = x_local[argsort(x_local)]
       y_local = np.array(RNG(1000))*1.33
 
       accepted_densityprofile_local = (y_local<=ndprofile(x_local))
-      x_local_accepted_densityprofile = x[accepted_densityprofile_local]
+      x_local_accepted_densityprofile = x_local[accepted_densityprofile_local]
       
       super_x[i] = x_local_accepted_densityprofile
 
-
+   h = np.array([5,3,4,9,1])
+   h = h[argsort(h)]
