@@ -55,6 +55,9 @@ def densityprofile(x):
 def ndprofile(x, N_sat=1):
    return N_sat*4*np.pi*A*densityprofileint(x)
 
+def rootfunction(x, N_sat=100):
+   return ndprofile(x, N_sat)-1.33/2
+
 def extmidpoint(func, edges, n):
    h = (edges[1]-edges[0])/n
    integration = 0
@@ -205,6 +208,26 @@ def Quicksort(x, start=0, end=None):
       Quicksort(x,start,index-1)
       Quicksort(x,index+1,end)
 
+def secant(func, interval, criterium, maxiter):
+   x_0 = interval[0]
+   x_1 = interval[1]
+   if func(x_0)*func(x_1)>=0:
+      return None
+   for i in range(maxiter):
+      x_2 = (1+func(x_0)/(func(x_1)-func(x_0)))*x_1-(func(x_0)/(func(x_1)-func(x_0)))*x_0
+      if abs(func(x_2)) <= criterium:
+         return x_2      
+      elif func(x_0)*func(x_2)<0:
+         x_0 = x_0
+         x_1 = x_2
+      elif func(x_1)*func(x_2)<0:
+         x_0 = x_1
+         x_1 = x_2
+      else:
+         return None
+   return None
+
+
 if __name__ == '__main__':
    seed = 2
    print("The seed is: " + str(seed))
@@ -244,16 +267,17 @@ if __name__ == '__main__':
    
    print("a,b,c,A = " + str(a) + "," + str(b) + "," + str(c) + "," + str(A))
 
-   numbers = [10**-4, 10**-2, 10**-1, 1, 5]
-   densityvalues = [densityprofile(10**-4), densityprofile(10**-2), densityprofile(10**-1), densityprofile(1), densityprofile(5)]
-   interpolatedrange = np.logspace(-4,0.69897,100)
+   numbers = np.log10(np.array([10**-4, 10**-2, 10**-1, 1, 5]))
+   densityvalues = np.log10(np.array([densityprofile(10**-4), densityprofile(10**-2), densityprofile(10**-1), densityprofile(1), densityprofile(5)]))
+   #interpolatedrange = np.logspace(-4,0.69897,100)
+   interpolatedrange = np.linspace(-4,0.69897,100)
 
    linearvalues = Linearinterpolation(interpolatedrange,numbers,densityvalues)
    #Nevillesvalues = Nevillesinterpolation(interpolatedrange,numbers,densityvalues)
    
    fig2, axs2 = plt.subplots()
-   axs2.loglog(interpolatedrange, linearvalues)
-   axs2.set(xlabel='log(x)', ylabel='Density profile')
+   axs2.plot(interpolatedrange, linearvalues)
+   axs2.set(xlabel='log10(x)', ylabel='log10(Density profile)')
    fig2.savefig('Log-Log plot Linear interpolation')
 
    derivative_at_b = riddler(densityprofile,b,0.1,2,6)
@@ -269,20 +293,13 @@ if __name__ == '__main__':
    phi = 2*np.pi*p_u2
 
    x_accepted_densityprofile = []
-   while len(x_accepted_densityprofile)<10000:
+   while len(x_accepted_densityprofile)<100:
       x = RNG(1)*5
       y = RNG(1)*1.33
       if y <= ndprofile(x):
          x_accepted_densityprofile.append(x)
 
-   logbins = np.logspace(np.log10(10**-4),np.log10(5),20)
-
-   fig3, axs3 = plt.subplots()
-   axs3.hist(x_accepted_densityprofile,bins=logbins,density=True, log=True)
-   Quicksort(x_accepted_densityprofile)
-   axs3.plot(x_accepted_densityprofile, ndprofile(np.array(x_accepted_densityprofile)))
-   axs3.set_xscale('log')
-   fig3.savefig('Density profile')
+   satellites100 = np.column_stack((x_accepted_densityprofile,phi,theta))
    
    haloes = [[] for i in range(1000)]
    
@@ -296,11 +313,6 @@ if __name__ == '__main__':
             x_local_accepted_densityprofile.append(x)
       
       haloes[i] = x_local_accepted_densityprofile
-   
-   """
-   To make histogram of the average of super_x, just concatenate all the data to one array of super_x and make a histogram and divide the histogram counts by 1000. This gives
-   the average in each bin. The problem now is we want 100 values, however each x has different lengths.
-   """
 
    flattened_haloes = [item for sublist in haloes for item in sublist]
    Quicksort(flattened_haloes)
@@ -308,39 +320,84 @@ if __name__ == '__main__':
    fig4, axs4 = plt.subplots()
 
    logbins = np.logspace(np.log10(10**-4),np.log10(5),20)
+   weights = []
 
-   axs4.hist(flattened_haloes,bins=logbins,weights=[1/(1000*(logbins[1]-logbins[0])) for i in range(len(flattened_haloes))], log=True)
-   axs4.plot(flattened_haloes, ndprofile(np.array(flattened_haloes),N_sat=100))
-   axs4.set_xscale('log')
-   fig4.savefig('Density profile Haloes')
-
-   """
-   fig4, axs4 = plt.subplots()
-
-   logbins = np.logspace(np.log10(10**-4),np.log10(5),20)
-
-   hist, bins = np.histogram(flattened_haloes,bins=logbins)
-   center = (bins[:-1]+bins[1:])/2
-   width = 1*(bins[1]-bins[0])
-   hist = hist/(1000*width)
-
-   axs4.bar(center, hist, align = 'center', width = width)
-   axs4.plot(flattened_haloes, ndprofile(np.array(flattened_haloes),N_sat=100))
-   axs4.set_xscale('log')
-   fig4.savefig('Density profile Haloes')
-   """
+   for i in range(len(flattened_haloes)):
+      j=0
+      bin_found = False
+      while bin_found == False:
+         if logbins[j] <= flattened_haloes[i] < logbins[j+1]:
+            bin_found = True
+            weights.append(1/(1000*(logbins[j+1]-logbins[j])))
+         else:
+            j += 1
    
+   #axs4.hist(flattened_haloes,bins=logbins,weights=weights, log=True)
+   axs4.hist(flattened_haloes,bins=logbins, log=True)
+   axs4.plot(flattened_haloes, ndprofile(np.array(flattened_haloes),N_sat=100))
+   axs4.set(xscale='log', xlabel='log10(x)', ylabel='log10(density)')
+   fig4.savefig('Density profile Haloes Log-Log2')
 
-"""
-# Create the histogram and normalize the counts to 1
-hist, bins = np.histogram(x, bins = 50)
-max_val = max(hist)
-hist = [ float(n)/max_val for n in hist]
+   """
+   fig5, axs5 = plt.subplots()
+ 
+   linbins = np.linspace(10**-4,5,20)
+   weights = []
 
-# Plot the resulting histogram
-center = (bins[:-1]+bins[1:])/2
-width = 0.7*(bins[1]-bins[0])
-plt.bar(center, hist, align = 'center', width = width)
-plt.show()
-"""
+   for i in range(len(flattened_haloes)):
+      j=0
+      bin_found = False
+      while bin_found == False:
+         if linbins[j] <= flattened_haloes[i] < linbins[j+1]:
+            bin_found = True
+            weights.append(1/(1000*(linbins[j+1]-linbins[j])))
+         else:
+            j += 1
+   
+   axs5.hist(flattened_haloes,bins=linbins,weights=weights)
+   axs5.plot(flattened_haloes, ndprofile(np.array(flattened_haloes),N_sat=100))
+   axs5.set(xlabel='x', ylabel='density')
+   fig5.savefig('Density profile Haloes Linear own range')
+   """
 
+   """
+   Solve the Equation N(x)-(y/2)=0 for x and where y is the maximum of N(x)
+   Change Secant so that it always the takes the points that have the steepest slope for the next value
+   Possibly also change Secant so that it is able to find multiple roots in a given range if there are multiple roots. (Perhaps a recursive function will be needed to do this)
+   Write a function that is able to find the maximum of the density profile for any given a,b and c. I could do this analytically.
+   Fix function input for secant.
+   """
+ 
+   root1 = secant(rootfunction, [10**-4,10**-1], 10**-6, 10**6)
+   root2 = secant(rootfunction, [10**-1,5], 10**-6, 10**6)
+
+   roots = [root1,root2]
+   
+   #Clarify what is meant exactly as the radial bin with the most number of galaxies?
+   
+   maxradialbin = [logbins[15], logbins[16]]
+
+   haloesmaxbin = [[] for i in range(1000)]
+   
+   for i in range(len(haloes)):
+      for j in range(len(haloes[i])):
+         if maxradialbin[0] <= haloes[i][j] <= maxradialbin[1]:
+            haloesmaxbin[i].append(haloes[i][j])
+
+   flat_haloesmaxbin = [item for sublist in haloesmaxbin for item in sublist]
+   index_16 = int(0.16*len(flat_haloesmaxbin)) - 1
+   index_84 = int(0.84*len(flat_haloesmaxbin)) - 1
+   Quicksort(flat_haloesmaxbin)
+   a_16 = flat_haloesmaxbin[index_16]
+   a_84 = flat_haloesmaxbin[index_84]
+
+   #Don't quite understand what's going here, have to figure out what needs to be binned and what the
+   #x-axis is supposed to be, since it is supposed to approximate a Poisson distribution.
+   haloesmaxbin_counts = [len(haloesmaxbin[i]) for i in range(1000)]
+   binshere = [i for i in range(1000)]
+   
+   fig5, axs5 = plt.subplots()
+   #axs5.plot(flattened_haloes, ndprofile(np.array(flattened_haloes), N_sat=100))
+   axs5.bar(binshere,haloesmaxbin_counts,width=1)
+   axs5.set(xlabel='Galaxy Number', ylabel='Counts of maximum radial bin')
+   fig5.savefig('Counts of bins')

@@ -5,17 +5,24 @@ np.random.seed(42)
 def bisection(func, interval): 
    return 
 
-def secant(func, interval, criterium):
+def secant(func, interval, criterium, maxiter):
    x_0 = interval[0]
    x_1 = interval[1]
-   converged = False
-   while converged == False:
+   if func(x_0)*func(x_1)>=0:
+      return None
+   for i in range(maxiter):
       x_2 = (1+func(x_0)/(func(x_1)-func(x_0)))*x_1-(func(x_0)/(func(x_1)-func(x_0)))*x_0
-      x_0 = x_1
-      x_1 = x_2
-      if func(x_2) <= criterium:
-         converged = True
-   return x_2
+      if abs(func(x_2)) <= criterium:
+         return x_2      
+      elif func(x_0)*func(x_2)<0:
+         x_0 = x_0
+         x_1 = x_2
+      elif func(x_1)*func(x_2)<0:
+         x_0 = x_1
+         x_1 = x_2
+      else:
+         return None
+   return None
 
 def falseposition():
    return
