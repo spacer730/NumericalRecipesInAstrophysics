@@ -430,6 +430,4 @@ if __name__ == '__main__':
          for k in range(len(crange)):
             a, b, c = arange[i], brange[j], crange[k]
             localint = extmidpointromberg(densityprofileint, [0,5], 10**2, 4)
-            A3d[i,j,k] += (1/(4*np.pi))*(1/localint)
-   
-   
+            A3d[i,j,k] += (1/(4*np.pi))*(1/localint)   
