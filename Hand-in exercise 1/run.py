@@ -2,13 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def factorial(k):
-   h = 1
+   h = 1#np.int64(1)
+   k = k#np.int64(k)
    while k>1:
       h = h*k
       k -= 1
    return h
 
 def Poisson(labda, k):
+   labda = np.float64(labda)
+   k = k#np.int64(k)
    return (labda**k)*np.exp(-labda)/(factorial(k))
 
 def LCG(x):
@@ -46,14 +49,14 @@ def RNG(length, norm = True):
    else:
       return randomnumbers.tolist()
 
-def densityprofileint(x):
-   return ((x/b)**(a-3))*np.exp(-(x/b)**c)*x**2
+def densityprofileint(x, N_sat=1):
+   return N_sat*((x/b)**(a-3))*np.exp(-(x/b)**c)*x**2
 
-def densityprofile(x):
-   return ((x/b)**(a-3))*np.exp(-(x/b)**c)
+def densityprofile(x, N_sat=1):
+   return N_sat*((x/b)**(a-3))*np.exp(-(x/b)**c)
 
 def ndprofile(x, N_sat=1):
-   return N_sat*4*np.pi*A*densityprofileint(x)
+   return 4*np.pi*A*densityprofileint(x, N_sat)
 
 def rootfunction(x, N_sat=100):
    return ndprofile(x, N_sat)-1.33/2
@@ -234,7 +237,7 @@ if __name__ == '__main__':
 
    print(Poisson(1,0))
    print(Poisson(5,10))
-   print(Poisson(3,20))
+   print(Poisson(3,21))
    print(Poisson(2.6,40))
 
    RNG_list = RNG(1000)
@@ -273,12 +276,17 @@ if __name__ == '__main__':
    interpolatedrange = np.linspace(-4,0.69897,100)
 
    linearvalues = Linearinterpolation(interpolatedrange,numbers,densityvalues)
-   #Nevillesvalues = Nevillesinterpolation(interpolatedrange,numbers,densityvalues)
+   Nevillesvalues = Nevillesinterpolation(interpolatedrange,numbers,densityvalues)
+   realvalues = np.log10(densityprofile(10**interpolatedrange))
    
    fig2, axs2 = plt.subplots()
-   axs2.plot(interpolatedrange, linearvalues)
+   axs2.plot(interpolatedrange, Nevillesvalues, label='Nevilles interpolation', color = 'orange')#linearvalues)
+   axs2.plot(interpolatedrange, linearvalues, label='Linear interpolation', color = 'blue')
+   axs2.plot(interpolatedrange, realvalues, label='real values', color = 'black')
+   axs2.scatter(numbers,densityvalues,marker="o", label='Data points', color=(1,0,0))
    axs2.set(xlabel='log10(x)', ylabel='log10(Density profile)')
-   fig2.savefig('Log-Log plot Linear interpolation')
+   axs2.legend()
+   fig2.savefig('Log-Log plot interpolation')
 
    derivative_at_b = riddler(densityprofile,b,0.1,2,6)
    analyticaldrv_at_b = analyticaldrvdensityprofile(b)
@@ -394,10 +402,34 @@ if __name__ == '__main__':
    #Don't quite understand what's going here, have to figure out what needs to be binned and what the
    #x-axis is supposed to be, since it is supposed to approximate a Poisson distribution.
    haloesmaxbin_counts = [len(haloesmaxbin[i]) for i in range(1000)]
-   binshere = [i for i in range(1000)]
    
+   binshere = np.unique(haloesmaxbin_counts)
+   
+   kspace = np.array(range(1,np.max(binshere)+1))
+
+   tra = []
+   for i in range (1,np.max(binshere)+1):
+      tra.append(Poisson(46.333,i))
+
    fig5, axs5 = plt.subplots()
-   #axs5.plot(flattened_haloes, ndprofile(np.array(flattened_haloes), N_sat=100))
-   axs5.bar(binshere,haloesmaxbin_counts,width=1)
-   axs5.set(xlabel='Galaxy Number', ylabel='Counts of maximum radial bin')
+   axs5.plot(kspace,1000*np.array(tra))#[Poisson(np.mean(haloesmaxbin_counts),i) for i in kspace])
+   #axs5.bar(binshere,haloesmaxbin_counts,bins=)
+   axs5.hist(haloesmaxbin_counts,bins=binshere)
+   axs5.set(xlabel='Number of galaxies in maximum radial bin', ylabel='Number of haloes')
    fig5.savefig('Counts of bins')
+
+   arange = np.linspace(1.1,2.5,15)
+   brange = np.linspace(0.5,2,16)
+   crange = np.linspace(1.5,4,26)
+
+   A3d = np.array([[[0 for k in range(len(crange))] for j in range(len(brange))] for i in range(len(arange))])
+   A3d = A3d.astype('float64')
+
+   for i in range(len(arange)):
+      for j in range(len(brange)):
+         for k in range(len(crange)):
+            a, b, c = arange[i], brange[j], crange[k]
+            localint = extmidpointromberg(densityprofileint, [0,5], 10**2, 4)
+            A3d[i,j,k] += (1/(4*np.pi))*(1/localint)
+   
+   
