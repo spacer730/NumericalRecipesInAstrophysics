@@ -230,6 +230,51 @@ def secant(func, interval, criterium, maxiter):
          return None
    return None
 
+def Linear3dinterpolator(A,a,b,c):
+   #Find indices of small cube surrounding the point
+   i = int((a-1.1)//0.1)
+   j = int((b-0.5)//0.1)
+   k = int((c-1.5)//0.1)
+   
+   #Combine 4 known points into intermediate values
+   p1 = Linearinterpolation([c],[1.5+0.1*k,1.5+0.1*(k+1)],[A[i,j,k],A[i,j,k+1]])[0]
+   p2 = Linearinterpolation([c],[1.5+0.1*k,1.5+0.1*(k+1)],[A[i,j+1,k],A[i,j+1,k+1]])[0]
+   p3 = Linearinterpolation([c],[1.5+0.1*k,1.5+0.1*(k+1)],[A[i+1,j,k],A[i+1,j,k+1]])[0]
+   p4 = Linearinterpolation([c],[1.5+0.1*k,1.5+0.1*(k+1)],[A[i+1,j+1,k],A[i+1,j+1,k+1]])[0]
+
+   #Combine the 4 intermediate values into two closer intermediate values
+   p5 = Linearinterpolation([a],[1.1+0.1*i,1.5+0.1*(i+1)],[p1,p3])[0]
+   p6 = Linearinterpolation([a],[1.1+0.1*i,1.5+0.1*(i+1)],[p2,p4])[0]
+
+   #Comebine the two closer intermediate values to the actual interpolation value
+   p7 = Linearinterpolation([b],[0.5+0.1*j,0.5+0.1*(j+1)],[p5,p6])[0]
+
+   return p7
+
+def opensatgals(textfile):
+   """
+   Skip the header, create a list of lists where in each sublist the coordinates of each halo is stored.
+   """
+   fh = open(textfile)
+   for _ in range(3):
+      next(fh)
+   halo_index = -1
+   for line in fh:
+      numberofhaloes = int(line.rstrip('\n'))
+      haloes = [[] for i in range(numberofhaloes)]
+      break
+   for line in fh:
+      line = line.rstrip('\n')
+      if line == '#':
+         print(line)
+         halo_index += 1
+         print(halo_index)
+      else:
+         haloes[halo_index].append(line)
+   fh.close()
+   
+   haloes = [[[float(s) for s in haloes[i][j].split('   ')] for j in range(len(haloes[i]))] for i in range(len(haloes))]
+   return haloes
 
 if __name__ == '__main__':
    seed = 2
@@ -430,4 +475,13 @@ if __name__ == '__main__':
          for k in range(len(crange)):
             a, b, c = arange[i], brange[j], crange[k]
             localint = extmidpointromberg(densityprofileint, [0,5], 10**2, 4)
-            A3d[i,j,k] += (1/(4*np.pi))*(1/localint)   
+            A3d[i,j,k] += (1/(4*np.pi))*(1/localint)
+
+   interpolationarray_k = np.zeros((len(arange),len(brange),len(crange)-1))
+   interpolationarray_k.astype('float64')
+
+   Linear3dinterpolator(A3d,1.15,0.55,1.55)
+   
+   haloes = opensatgals('Data/satgals_m14.txt')
+
+   x14 = [[x[0] for x in haloes[i]] for i in range(len(haloes))]
