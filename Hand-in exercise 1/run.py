@@ -266,9 +266,7 @@ def opensatgals(textfile):
    for line in fh:
       line = line.rstrip('\n')
       if line == '#':
-         print(line)
          halo_index += 1
-         print(halo_index)
       else:
          haloes[halo_index].append(line)
    fh.close()
@@ -485,3 +483,14 @@ if __name__ == '__main__':
    haloes = opensatgals('Data/satgals_m14.txt')
 
    x14 = [[x[0] for x in haloes[i]] for i in range(len(haloes))]
+
+   flattened_x14 = [item for sublist in x14 for item in sublist]
+
+   fig6, axs6 = plt.subplots()
+
+   logbins = np.logspace(np.log10(10**-4),np.log10(5),20)
+   
+   #axs4.hist(flattened_haloes,bins=logbins,weights=weights, log=True)
+   axs6.hist(flattened_x14,bins=20,weights=[(1./223.) for i in range(len(flattened_x14))])
+   axs6.set(xlabel='x', ylabel='counts')
+   fig6.savefig('Density profile readin gal')
